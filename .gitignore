@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.output/
+.vite/
+.wrangler/
+.dev.vars
+.env
+.env.local
+*.log
+.DS_Store
+worker-configuration.d.ts
+src/routeTree.gen.ts

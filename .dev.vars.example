@@ -1,0 +1,7 @@
+# Copia este archivo a .dev.vars (NO subir a git) para desarrollo local con
+# `pnpm dev` / `wrangler dev`. En producción estas variables se configuran
+# como secretos de Cloudflare (ver README.md).
+
+DATABASE_URL=postgresql://usuario:password@ep-xxxx.neon.tech/neondb?sslmode=require
+ADMIN_PASSWORD=cambia-esta-contrasena
+SESSION_SECRET=una-cadena-larga-y-aleatoria-para-firmar-las-sesiones
