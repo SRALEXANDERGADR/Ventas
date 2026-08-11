@@ -263,6 +263,11 @@ label textarea { min-height: 90px; resize: vertical; }
 .management-toolbar .search-field { width: min(420px, 100%); background: white; }
 .management-toolbar .primary-button { margin: 0; min-height: 43px; }
 .data-card { background: white; border: 1px solid #e1ddd4; overflow: auto; }
+.content-sections { display: flex; flex-direction: column; gap: 18px; }
+.content-sections .panel-card { min-height: 0; }
+.content-sections label { display: block; margin-bottom: 16px; }
+.content-save-bar { position: sticky; bottom: 0; margin-top: 20px; padding: 14px 18px; background: white; border: 1px solid #e1ddd4; display: flex; align-items: center; justify-content: space-between; gap: 16px; font-size: .72rem; color: var(--muted); }
+.content-save-bar .primary-button { margin: 0; min-height: 42px; }
 table { width: 100%; border-collapse: collapse; }
 th { height: 45px; padding: 0 17px; background: #f8f6f1; color: var(--muted); text-align: left; text-transform: uppercase; letter-spacing: .08em; font-size: .52rem; white-space: nowrap; }
 td { height: 67px; padding: 8px 17px; border-top: 1px solid #eeeae3; font-size: .68rem; white-space: nowrap; }
