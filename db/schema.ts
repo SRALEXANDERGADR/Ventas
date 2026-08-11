@@ -77,6 +77,12 @@ export const invoiceItems = pgTable(
   (table) => [index('invoice_items_invoice_idx').on(table.invoiceId)],
 )
 
+export const siteContent = pgTable('site_content', {
+  key: text().primaryKey(),
+  value: text().notNull().default(''),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+})
+
 export const payments = pgTable(
   'payments',
   {
