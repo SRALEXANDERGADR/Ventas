@@ -5,3 +5,9 @@
 DATABASE_URL=postgresql://usuario:password@ep-xxxx.neon.tech/neondb?sslmode=require
 ADMIN_PASSWORD=cambia-esta-contrasena
 SESSION_SECRET=una-cadena-larga-y-aleatoria-para-firmar-las-sesiones
+
+# Opcional: subir imágenes de producto desde el panel (ver README.md)
+GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+GITHUB_REPO=tu-usuario/tu-repositorio
+GITHUB_BRANCH=main
+GITHUB_UPLOAD_PATH=public/products
