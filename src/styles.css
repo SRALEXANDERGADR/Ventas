@@ -345,7 +345,6 @@ td { height: 67px; padding: 8px 17px; border-top: 1px solid #eeeae3; font-size: 
 
 @media (max-width: 760px) {
   .site-header { height: 74px; padding: 0 18px; }
-  .header-actions .icon-button { display: none; }
   .cart-button span { display: none; }
   .hero { padding: 55px 22px 75px; grid-template-columns: 1fr; }
   .hero-copy { padding: 0; }
