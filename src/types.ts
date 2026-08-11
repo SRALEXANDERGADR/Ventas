@@ -1,3 +1,5 @@
+export type { SiteContent } from '@/lib/site-content'
+
 export type Product = {
   id: number
   code: string
