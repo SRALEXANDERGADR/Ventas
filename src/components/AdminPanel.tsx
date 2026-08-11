@@ -8,6 +8,7 @@ import {
   CircleDollarSign,
   ClipboardList,
   Eye,
+  FileEdit,
   FilePlus2,
   LayoutDashboard,
   LogOut,
@@ -27,9 +28,10 @@ import {
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { currency, shortDate } from '@/lib/format'
-import type { Customer, DashboardData, Invoice, Product } from '@/types'
+import { CONTENT_FIELD_GROUPS, DEFAULT_SITE_CONTENT } from '@/lib/site-content'
+import type { Customer, DashboardData, Invoice, Product, SiteContent } from '@/types'
 
-type Tab = 'resumen' | 'productos' | 'clientes' | 'facturas'
+type Tab = 'resumen' | 'productos' | 'clientes' | 'facturas' | 'contenido'
 type ProductDraft = Omit<Product, 'id'>
 type CustomerDraft = Pick<Customer, 'name' | 'phone' | 'email' | 'address' | 'notes'>
 type InvoiceLine = { productId: number; quantity: number }
@@ -70,6 +72,10 @@ export function AdminPanel() {
   const [paymentAmount, setPaymentAmount] = useState(0)
   const [paymentMethod, setPaymentMethod] = useState('Efectivo')
   const [saving, setSaving] = useState(false)
+  const [content, setContent] = useState<SiteContent>(DEFAULT_SITE_CONTENT)
+  const [contentDraft, setContentDraft] = useState<SiteContent>(DEFAULT_SITE_CONTENT)
+  const [contentLoading, setContentLoading] = useState(false)
+  const [contentSaving, setContentSaving] = useState(false)
 
   const loadDashboard = useCallback(async () => {
     setLoading(true)
@@ -79,6 +85,19 @@ export function AdminPanel() {
       setNotice(caught instanceof Error ? caught.message : 'No pudimos cargar el panel.')
     } finally {
       setLoading(false)
+    }
+  }, [])
+
+  const loadContent = useCallback(async () => {
+    setContentLoading(true)
+    try {
+      const loaded = await api<SiteContent>('/api/content')
+      setContent(loaded)
+      setContentDraft(loaded)
+    } catch (caught) {
+      setNotice(caught instanceof Error ? caught.message : 'No pudimos cargar el contenido del sitio.')
+    } finally {
+      setContentLoading(false)
     }
   }, [])
 
@@ -97,8 +116,31 @@ export function AdminPanel() {
   }, [])
 
   useEffect(() => {
-    if (authenticated) void loadDashboard()
-  }, [authenticated, loadDashboard])
+    if (authenticated) {
+      void loadDashboard()
+      void loadContent()
+    }
+  }, [authenticated, loadDashboard, loadContent])
+
+  const saveContent = async (event: FormEvent) => {
+    event.preventDefault()
+    setContentSaving(true)
+    try {
+      const updated = await api<SiteContent>('/api/content', { method: 'PATCH', body: JSON.stringify(contentDraft) })
+      setContent(updated)
+      setContentDraft(updated)
+      setNotice('Contenido del sitio actualizado.')
+    } catch (caught) {
+      setNotice(caught instanceof Error ? caught.message : 'No pudimos guardar el contenido.')
+    } finally {
+      setContentSaving(false)
+    }
+  }
+
+  const contentChanged = useMemo(
+    () => CONTENT_FIELD_GROUPS.some((group) => group.fields.some((field) => (contentDraft[field.key] ?? '') !== (content[field.key] ?? ''))),
+    [content, contentDraft],
+  )
 
   const handleLogin = async (event: FormEvent) => {
     event.preventDefault()
@@ -224,6 +266,7 @@ export function AdminPanel() {
         <button className={tab === 'productos' ? 'active' : ''} onClick={() => { setTab('productos'); setQuery('') }}><Boxes /> Productos</button>
         <button className={tab === 'clientes' ? 'active' : ''} onClick={() => { setTab('clientes'); setQuery('') }}><Users /> Clientes</button>
         <button className={tab === 'facturas' ? 'active' : ''} onClick={() => { setTab('facturas'); setQuery('') }}><ReceiptText /> Facturas</button>
+        <button className={tab === 'contenido' ? 'active' : ''} onClick={() => { setTab('contenido'); setQuery('') }}><FileEdit /> Contenido</button>
       </nav>
       <div className="sidebar-footer"><Link to="/"><ShoppingBag /> Ver tienda</Link><button onClick={signOut}><LogOut /> Cerrar sesión</button><div><span>A</span><p><strong>Administración</strong><small>Aura Esenciales</small></p></div></div>
     </aside>
@@ -246,31 +289,8 @@ export function AdminPanel() {
         </section>
       </>}
 
-      {data && tab !== 'resumen' && <section className="management-page">
+      {data && tab !== 'resumen' && tab !== 'contenido' && <section className="management-page">
         <div className="management-toolbar"><label className="search-field"><Search /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Buscar en ${tab}…`} /></label>{tab === 'productos' && <button className="primary-button" onClick={() => openProduct()}><Plus /> Nuevo producto</button>}{tab === 'clientes' && <button className="primary-button" onClick={() => openCustomer()}><Plus /> Nuevo cliente</button>}{tab === 'facturas' && <button className="primary-button" onClick={() => setInvoiceModal(true)}><Plus /> Nueva factura</button>}</div>
         {tab === 'productos' && <div className="data-card"><table><thead><tr><th>Producto</th><th>Código</th><th>Categoría</th><th>Precio</th><th>Inventario</th><th>Estado</th><th /></tr></thead><tbody>{filteredProducts.map((product) => <tr key={product.id}><td><div className="table-product"><img src={product.imageUrl || '/product-placeholder.svg'} alt="" /><strong>{product.name}</strong></div></td><td><code>{product.code}</code></td><td>{product.category}</td><td><strong>{currency(product.priceCents)}</strong></td><td><span className={product.stock <= 5 ? 'stock-low' : ''}>{product.stock} unidades</span></td><td><span className={`simple-status ${product.active ? 'ok' : 'off'}`}>{product.active ? 'Activo' : 'Oculto'}</span></td><td><div className="row-actions"><button onClick={() => openProduct(product)}><Pencil /></button><button onClick={() => void removeProduct(product)}><Trash2 /></button></div></td></tr>)}</tbody></table>{!filteredProducts.length && <Empty message="No hay productos que mostrar." />}</div>}
         {tab === 'clientes' && <div className="customer-grid">{filteredCustomers.map((customer) => <article key={customer.id}><div className="customer-card-top"><span>{customer.name.charAt(0)}</span><button onClick={() => openCustomer(customer)}><Pencil /></button></div><h3>{customer.name}</h3><p>{customer.phone}</p><small>{customer.email || 'Sin correo registrado'}</small><div><span>Saldo actual</span><strong className={customer.balanceCents ? 'has-debt' : ''}>{currency(customer.balanceCents)}</strong></div><footer><span>{customer.invoiceCount} factura(s)</span><b className={customer.balanceCents ? 'pending-dot' : 'paid-dot'}>{customer.balanceCents ? 'Pendiente' : 'Saldado'}</b></footer></article>)}{!filteredCustomers.length && <Empty message="No hay clientes que mostrar." />}</div>}
-        {tab === 'facturas' && <div className="data-card"><table><thead><tr><th>Factura</th><th>Cliente</th><th>Fecha</th><th>Total</th><th>Abonado</th><th>Saldo</th><th>Estado</th><th /></tr></thead><tbody>{filteredInvoices.map((invoice) => <tr key={invoice.id}><td><code>{invoice.number}</code></td><td><strong>{invoice.customerName}</strong><small className="table-subtext">{invoice.customerPhone}</small></td><td>{shortDate(invoice.createdAt)}</td><td><strong>{currency(invoice.totalCents)}</strong></td><td>{currency(invoice.paidCents)}</td><td><strong className={invoice.balanceCents ? 'has-debt' : ''}>{currency(invoice.balanceCents)}</strong></td><td><StatusBadge invoice={invoice} /></td><td><div className="row-actions"><button onClick={() => setSelectedInvoice(invoice)}><Eye /></button>{invoice.balanceCents > 0 && <button className="pay-action" onClick={() => { setPaymentInvoice(invoice); setPaymentAmount(invoice.balanceCents) }}><Banknote /></button>}</div></td></tr>)}</tbody></table>{!filteredInvoices.length && <Empty message="No hay facturas que mostrar." />}</div>}
-      </section>}
-    </section>
-
-    {productModal && <AdminModal title={editingProduct ? 'Editar producto' : 'Agregar producto'} subtitle="El código identifica cada artículo en inventario." onClose={() => setProductModal(false)}><form onSubmit={saveProduct} className="admin-form"><div className="form-grid"><label>Código del producto<input required value={productDraft.code} onChange={(event) => setProductDraft({ ...productDraft, code: event.target.value.toUpperCase() })} placeholder="CH-005" /></label><label>Nombre<input required value={productDraft.name} onChange={(event) => setProductDraft({ ...productDraft, name: event.target.value })} /></label><label>Categoría<input required value={productDraft.category} onChange={(event) => setProductDraft({ ...productDraft, category: event.target.value })} /></label><label>Precio (RD$)<input required type="number" min="0" value={productDraft.priceCents / 100 || ''} onChange={(event) => setProductDraft({ ...productDraft, priceCents: Math.round(Number(event.target.value) * 100) })} /></label><label>Existencias<input required type="number" min="0" value={productDraft.stock} onChange={(event) => setProductDraft({ ...productDraft, stock: Number(event.target.value) })} /></label><label>URL de imagen<input value={productDraft.imageUrl} onChange={(event) => setProductDraft({ ...productDraft, imageUrl: event.target.value })} placeholder="https://…" /></label><label className="full-field">Descripción<textarea value={productDraft.description} onChange={(event) => setProductDraft({ ...productDraft, description: event.target.value })} /></label></div><div className="check-row"><label><input type="checkbox" checked={productDraft.featured} onChange={(event) => setProductDraft({ ...productDraft, featured: event.target.checked })} /> Destacar en la tienda</label><label><input type="checkbox" checked={productDraft.active} onChange={(event) => setProductDraft({ ...productDraft, active: event.target.checked })} /> Producto activo</label></div><button className="primary-button full" disabled={saving}>{saving ? 'Guardando…' : 'Guardar producto'}</button></form></AdminModal>}
-    {customerModal && <AdminModal title={editingCustomer ? 'Editar cliente' : 'Registrar cliente'} subtitle="Guarda sus datos para facturar y consultar saldos." onClose={() => setCustomerModal(false)}><form onSubmit={saveCustomer} className="admin-form"><div className="form-grid"><label>Nombre completo<input required value={customerDraft.name} onChange={(event) => setCustomerDraft({ ...customerDraft, name: event.target.value })} /></label><label>Teléfono<input required value={customerDraft.phone} onChange={(event) => setCustomerDraft({ ...customerDraft, phone: event.target.value })} /></label><label>Correo<input type="email" value={customerDraft.email} onChange={(event) => setCustomerDraft({ ...customerDraft, email: event.target.value })} /></label><label>Dirección<input value={customerDraft.address} onChange={(event) => setCustomerDraft({ ...customerDraft, address: event.target.value })} /></label><label className="full-field">Notas<textarea value={customerDraft.notes} onChange={(event) => setCustomerDraft({ ...customerDraft, notes: event.target.value })} /></label></div><button className="primary-button full" disabled={saving}>{saving ? 'Guardando…' : 'Guardar cliente'}</button></form></AdminModal>}
-    {invoiceModal && data && <AdminModal title="Nueva factura" subtitle="Selecciona el cliente, agrega productos y registra el pago inicial." onClose={() => setInvoiceModal(false)} wide><form onSubmit={createInvoice} className="admin-form"><label>Cliente<select required value={invoiceCustomerId} onChange={(event) => setInvoiceCustomerId(Number(event.target.value))}><option value="">Selecciona un cliente</option>{data.customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name} · {customer.phone}</option>)}</select></label><div className="invoice-builder"><div className="builder-title"><strong>Productos</strong><button type="button" onClick={() => setInvoiceLines([...invoiceLines, { productId: 0, quantity: 1 }])}><Plus /> Agregar línea</button></div>{invoiceLines.map((line, index) => <div className="invoice-line" key={index}><select required value={line.productId} onChange={(event) => setInvoiceLines(invoiceLines.map((item, itemIndex) => itemIndex === index ? { ...item, productId: Number(event.target.value) } : item))}><option value="">Selecciona un producto</option>{data.products.filter((product) => product.active && product.stock > 0).map((product) => <option value={product.id} key={product.id}>{product.code} · {product.name} ({product.stock})</option>)}</select><input type="number" min="1" value={line.quantity} onChange={(event) => setInvoiceLines(invoiceLines.map((item, itemIndex) => itemIndex === index ? { ...item, quantity: Number(event.target.value) } : item))} /><strong>{currency((data.products.find((product) => product.id === line.productId)?.priceCents || 0) * line.quantity)}</strong><button type="button" onClick={() => setInvoiceLines(invoiceLines.filter((_, itemIndex) => itemIndex !== index))}><Trash2 /></button></div>)}</div><div className="form-grid"><label>Pago inicial (RD$)<input type="number" min="0" max={invoiceDraftTotal / 100} value={invoicePaid / 100 || ''} onChange={(event) => setInvoicePaid(Math.round(Number(event.target.value) * 100))} /></label><label>Fecha límite<input type="date" value={invoiceDueDate} onChange={(event) => setInvoiceDueDate(event.target.value)} /></label></div><div className="invoice-draft-total"><span>Total de factura</span><strong>{currency(invoiceDraftTotal)}</strong></div><button className="primary-button full" disabled={saving || !invoiceDraftTotal}>{saving ? 'Creando factura…' : 'Crear factura'}</button></form></AdminModal>}
-    {paymentInvoice && <AdminModal title="Registrar abono" subtitle={`${paymentInvoice.number} · ${paymentInvoice.customerName}`} onClose={() => setPaymentInvoice(null)}><form onSubmit={registerPayment} className="admin-form"><div className="balance-highlight"><span>Saldo pendiente</span><strong>{currency(paymentInvoice.balanceCents)}</strong></div><label>Monto recibido (RD$)<input required type="number" min="1" max={paymentInvoice.balanceCents / 100} value={paymentAmount / 100 || ''} onChange={(event) => setPaymentAmount(Math.round(Number(event.target.value) * 100))} /></label><label>Método de pago<select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value)}><option>Efectivo</option><option>Transferencia</option><option>Tarjeta</option><option>Otro</option></select></label><button className="primary-button full" disabled={saving}>{saving ? 'Registrando…' : 'Confirmar abono'}</button></form></AdminModal>}
-    {selectedInvoice && <AdminModal title={selectedInvoice.number} subtitle={`${selectedInvoice.customerName} · ${shortDate(selectedInvoice.createdAt)}`} onClose={() => setSelectedInvoice(null)} wide><div className="invoice-detail"><div className="invoice-detail-summary"><div><span>Total</span><strong>{currency(selectedInvoice.totalCents)}</strong></div><div><span>Abonado</span><strong>{currency(selectedInvoice.paidCents)}</strong></div><div><span>Saldo</span><strong className={selectedInvoice.balanceCents ? 'has-debt' : ''}>{currency(selectedInvoice.balanceCents)}</strong></div><StatusBadge invoice={selectedInvoice} /></div><div className="detail-lines">{selectedInvoice.items.map((item) => <div key={item.id}><span><strong>{item.productName}</strong><small>{item.productCode} · {item.quantity} × {currency(item.unitPriceCents)}</small></span><b>{currency(item.totalCents)}</b></div>)}</div>{selectedInvoice.payments.length > 0 && <div className="payment-history"><h3>Historial de pagos</h3>{selectedInvoice.payments.map((payment) => <div key={payment.id}><span><strong>{payment.method}</strong><small>{shortDate(payment.createdAt)}</small></span><b>{currency(payment.amountCents)}</b></div>)}</div>}{selectedInvoice.balanceCents > 0 && <button className="primary-button full" onClick={() => { setPaymentInvoice(selectedInvoice); setPaymentAmount(selectedInvoice.balanceCents); setSelectedInvoice(null) }}>Registrar abono</button>}</div></AdminModal>}
-  </main>
-}
-
-function StatusBadge({ invoice }: { invoice: Invoice }) {
-  const status = invoice.balanceCents <= 0 ? 'paid' : invoice.status === 'overdue' ? 'overdue' : invoice.paidCents > 0 ? 'partial' : 'pending'
-  return <span className={`status-badge ${status}`}>{status === 'paid' ? 'Saldada' : status === 'partial' ? 'Abonada' : status === 'overdue' ? 'Vencida' : 'Pendiente'}</span>
-}
-
-function Empty({ message }: { message: string }) {
-  return <div className="table-empty"><ReceiptText /><p>{message}</p></div>
-}
-
-function AdminModal({ title, subtitle, onClose, wide = false, children }: { title: string; subtitle: string; onClose: () => void; wide?: boolean; children: ReactNode }) {
-  return <div className="modal-layer"><button className="modal-backdrop" aria-label="Cerrar" onClick={onClose} /><section className={`admin-modal ${wide ? 'wide' : ''}`}><header><div><small>Gestión Aura</small><h2>{title}</h2><p>{subtitle}</p></div><button className="icon-button" onClick={onClose}><X /></button></header>{children}</section></div>
-}
+        {tab === 'facturas' && <div className="data-card"><table><thead><tr><th>Factura</th><th>Cliente</th><th>Fecha</th><th>Total</th><th>Abonado</th><th>Saldo</th><th>Estado</th><th /></tr></thead><tbody>{filteredInvoices.map((invoice) => <tr key={invoice.id}><td><code>{invoice.number}</code></td><td><strong>{invoice.customerName}</strong><small className="table-subtext">{invoice.customerPhone}</small></td><td>{shortDate(invoice.createdAt)}</td><td><strong>{currency(invoice.totalCents)}</strong></td><td>{currency(invoice.paidCents)}</td><td><strong className={invoice.balanceCents ? 'has-debt' : ''}>{currency(invoice.balanceCents)}</strong></td><td><StatusBadge invoice={invoice} /></td><td><div className="row-actions"><button onClick={() => setSelectedInvoice(invoice)}><Eye /></button>{invoice.balanceCents > 0 && <button className="pay-action" onClick={() => { setPaymentInvoice(invoice); setPaymentAmount(invoice.balanceCents) }}><Banknote /></button>}</div></td></tr>)}</tbo
