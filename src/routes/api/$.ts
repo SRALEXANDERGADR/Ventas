@@ -2,8 +2,9 @@ import { createFileRoute } from '@tanstack/react-router'
 import { env } from 'cloudflare:workers'
 import { and, asc, desc, eq, inArray, or } from 'drizzle-orm'
 import { db } from '../../../db/index.js'
-import { customers, invoiceItems, invoices, payments, products } from '../../../db/schema.js'
+import { customers, invoiceItems, invoices, payments, products, siteContent } from '../../../db/schema.js'
 import { isAuthenticated } from '@/lib/auth'
+import { DEFAULT_SITE_CONTENT, mergeSiteContent } from '@/lib/site-content'
 
 const json = (data: unknown, status = 200) => Response.json(data, { status })
 const error = (message: string, status = 400) => json({ error: message }, status)
@@ -18,6 +19,26 @@ const seedProducts = [
 async function ensureProducts() {
   const existing = await db.select({ id: products.id }).from(products).limit(1)
   if (!existing.length) await db.insert(products).values(seedProducts).onConflictDoNothing()
+}
+
+async function getSiteContent() {
+  const rows = await db.select().from(siteContent)
+  const overrides = Object.fromEntries(rows.map((row) => [row.key, row.value]))
+  return mergeSiteContent(overrides)
+}
+
+async function saveSiteContent(body: Record<string, unknown>) {
+  const entries = Object.entries(body).filter(([key, value]) => key in DEFAULT_SITE_CONTENT && typeof value === 'string')
+  if (!entries.length) return error('No se recibió contenido válido para guardar.')
+  await Promise.all(
+    entries.map(([key, value]) =>
+      db
+        .insert(siteContent)
+        .values({ key, value: value as string, updatedAt: new Date() })
+        .onConflictDoUpdate({ target: siteContent.key, set: { value: value as string, updatedAt: new Date() } }),
+    ),
+  )
+  return json(await getSiteContent())
 }
 
 async function requireAdmin(request: Request): Promise<boolean> {
@@ -102,9 +123,12 @@ async function handleApi(request: Request): Promise<Response> {
       return json(rows)
     }
     if (name === 'orders' && request.method === 'POST') return createInvoice((await request.json()) as Record<string, unknown>, true)
+    if (name === 'content' && request.method === 'GET') return json(await getSiteContent())
 
     const authorized = await requireAdmin(request)
     if (!authorized) return error('Esta cuenta no tiene permisos de administración.', 403)
+
+    if (name === 'content' && request.method === 'PATCH') return saveSiteContent((await request.json()) as Record<string, unknown>)
 
     if (name === 'dashboard' && request.method === 'GET') {
       await ensureProducts()
