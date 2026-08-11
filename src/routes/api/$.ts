@@ -4,6 +4,7 @@ import { and, asc, desc, eq, inArray, or } from 'drizzle-orm'
 import { db } from '../../../db/index.js'
 import { customers, invoiceItems, invoices, payments, products, siteContent } from '../../../db/schema.js'
 import { isAuthenticated } from '@/lib/auth'
+import { uploadProductImage } from '@/lib/github'
 import { DEFAULT_SITE_CONTENT, mergeSiteContent } from '@/lib/site-content'
 
 const json = (data: unknown, status = 200) => Response.json(data, { status })
@@ -129,6 +130,12 @@ async function handleApi(request: Request): Promise<Response> {
     if (!authorized) return error('Esta cuenta no tiene permisos de administración.', 403)
 
     if (name === 'content' && request.method === 'PATCH') return saveSiteContent((await request.json()) as Record<string, unknown>)
+
+    if (name === 'upload' && request.method === 'POST') {
+      const body = (await request.json()) as Record<string, unknown>
+      const url = await uploadProductImage(env, { filename: String(body.filename || 'imagen.jpg'), dataUrl: String(body.dataUrl || '') })
+      return json({ url })
+    }
 
     if (name === 'dashboard' && request.method === 'GET') {
       await ensureProducts()
