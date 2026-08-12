@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 
 import '../styles.css'
 
-const SITE_URL = 'https://1f03e17f-auraesenciales.auraesenciales.workers.dev'
+const SITE_URL = 'https://auraesenciales.auraesenciales.workers.dev'
 const SITE_TITLE = 'Aura Esenciales | Cuidado personal'
 const SITE_DESCRIPTION = 'Tienda de productos para el cuidado del cabello, rostro y cuerpo.'
 const OG_IMAGE = `${SITE_URL}/og-image.png`
