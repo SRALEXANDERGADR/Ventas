@@ -185,7 +185,7 @@ async function handleApi(request: Request): Promise<Response> {
       return json(updated)
     }
 
-    if (name === 'invoices' && request.method === 'POST') return createInvoice((await request.json()) as Record<string, unknown>)
+    if (name === 'invoices' && !id && request.method === 'POST') return createInvoice((await request.json()) as Record<string, unknown>)
     if (name === 'invoices' && id && resource[2] === 'payments' && request.method === 'POST') {
       const body = (await request.json()) as Record<string, unknown>
       const amountCents = Math.max(1, Number(body.amountCents) || 0)
