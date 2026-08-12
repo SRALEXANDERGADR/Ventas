@@ -199,6 +199,12 @@ async function handleApi(request: Request): Promise<Response> {
       await db.update(invoices).set({ paidCents, status: paidCents >= invoice.totalCents ? 'paid' : 'partial', updatedAt: new Date() }).where(eq(invoices.id, id))
       return json({ ok: true, paidCents })
     }
+    if (name === 'invoices' && id && request.method === 'DELETE') {
+      const [existing] = await db.select({ id: invoices.id }).from(invoices).where(eq(invoices.id, id)).limit(1)
+      if (!existing) return error('Factura no encontrada.', 404)
+      await db.delete(invoices).where(eq(invoices.id, id))
+      return json({ ok: true })
+    }
 
     return error('Ruta no encontrada.', 404)
   } catch (caught) {
