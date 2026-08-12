@@ -7,6 +7,7 @@ import {
   ChevronRight,
   CircleDollarSign,
   ClipboardList,
+  Download,
   Eye,
   FileEdit,
   FilePlus2,
@@ -254,6 +255,60 @@ export function AdminPanel() {
     }
   }
 
+  const deleteInvoice = async (invoice: Invoice) => {
+    if (!window.confirm(`¿Eliminar la factura ${invoice.number} de ${invoice.customerName}? Esta acción no se puede deshacer.`)) return
+    setSaving(true)
+    try {
+      await api(`/api/invoices/${invoice.id}`, { method: 'DELETE' })
+      setSelectedInvoice(null)
+      setNotice('Factura eliminada.')
+      await loadDashboard()
+    } catch (caught) {
+      setNotice(caught instanceof Error ? caught.message : 'No pudimos eliminar la factura.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const printInvoice = (invoice: Invoice) => {
+    const win = window.open('', '_blank')
+    if (!win) { setNotice('Permite las ventanas emergentes para descargar la factura.'); return }
+    const rows = invoice.items.map((item) => `<tr><td>${item.productCode}</td><td>${item.productName}</td><td class="c">${item.quantity}</td><td class="r">${currency(item.unitPriceCents)}</td><td class="r">${currency(item.totalCents)}</td></tr>`).join('')
+    const paymentRows = invoice.payments.map((payment) => `<tr><td>${shortDate(payment.createdAt)}</td><td>${payment.method}</td><td class="r">${currency(payment.amountCents)}</td></tr>`).join('')
+    win.document.write(`<!doctype html><html><head><meta charset="utf-8" /><title>${invoice.number}</title><style>
+      body{font-family:Georgia,'Times New Roman',serif;color:#2c2c22;padding:32px;max-width:640px;margin:0 auto}
+      h1{font-size:1.6rem;margin:18px 0 4px}
+      .muted{color:#78786a;font-size:.85rem}
+      .brand{letter-spacing:.1em;text-transform:uppercase;font-size:.75rem;color:#5b6b4e;font-weight:bold}
+      table{width:100%;border-collapse:collapse;margin-top:18px}
+      th,td{padding:8px 6px;border-bottom:1px solid #e4e0d3;font-size:.85rem;text-align:left}
+      th{text-transform:uppercase;font-size:.65rem;letter-spacing:.05em;color:#78786a}
+      .c{text-align:center}.r{text-align:right}
+      .totals{margin-top:6px}
+      .totals td{border:none;padding:4px 6px}
+      .totals .grand td{font-weight:bold;font-size:1.05rem;border-top:2px solid #2c2c22;padding-top:8px}
+      @media print{body{padding:0}}
+    </style></head><body>
+      <div class="brand">Gestión Aura</div>
+      <h1>Factura ${invoice.number}</h1>
+      <p class="muted">Fecha: ${shortDate(invoice.createdAt)}${invoice.dueDate ? ' · Vence: ' + shortDate(invoice.dueDate) : ''}</p>
+      <p><strong>Cliente:</strong> ${invoice.customerName}<br/><span class="muted">${invoice.customerPhone || ''}</span></p>
+      <table><thead><tr><th>Código</th><th>Producto</th><th class="c">Cant.</th><th class="r">Precio</th><th class="r">Total</th></tr></thead><tbody>${rows}</tbody></table>
+      <table class="totals">
+        <tr><td>Subtotal</td><td class="r">${currency(invoice.subtotalCents)}</td></tr>
+        ${invoice.discountCents ? `<tr><td>Descuento</td><td class="r">-${currency(invoice.discountCents)}</td></tr>` : ''}
+        <tr class="grand"><td>Total</td><td class="r">${currency(invoice.totalCents)}</td></tr>
+        <tr><td>Abonado</td><td class="r">${currency(invoice.paidCents)}</td></tr>
+        <tr><td>Saldo</td><td class="r">${currency(invoice.balanceCents)}</td></tr>
+      </table>
+      ${invoice.payments.length ? `<h3>Historial de pagos</h3><table><thead><tr><th>Fecha</th><th>Método</th><th class="r">Monto</th></tr></thead><tbody>${paymentRows}</tbody></table>` : ''}
+      ${invoice.notes ? `<p class="muted">Notas: ${invoice.notes}</p>` : ''}
+    </body></html>`)
+    win.document.close()
+    win.focus()
+    win.print()
+  }
+
   const registerPayment = async (event: FormEvent) => {
     event.preventDefault()
     if (!paymentInvoice) return
@@ -321,7 +376,7 @@ export function AdminPanel() {
         <div className="management-toolbar"><label className="search-field"><Search /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Buscar en ${tab}…`} /></label>{tab === 'productos' && <button className="primary-button" onClick={() => openProduct()}><Plus /> Nuevo producto</button>}{tab === 'clientes' && <button className="primary-button" onClick={() => openCustomer()}><Plus /> Nuevo cliente</button>}{tab === 'facturas' && <button className="primary-button" onClick={() => setInvoiceModal(true)}><Plus /> Nueva factura</button>}</div>
         {tab === 'productos' && <div className="data-card"><table><thead><tr><th>Producto</th><th>Código</th><th>Categoría</th><th>Precio</th><th>Inventario</th><th>Estado</th><th /></tr></thead><tbody>{filteredProducts.map((product) => <tr key={product.id}><td><div className="table-product"><img src={product.imageUrl || '/product-placeholder.svg'} alt="" /><strong>{product.name}</strong></div></td><td><code>{product.code}</code></td><td>{product.category}</td><td><strong>{currency(product.priceCents)}</strong></td><td><span className={product.stock <= 5 ? 'stock-low' : ''}>{product.stock} unidades</span></td><td><span className={`simple-status ${product.active ? 'ok' : 'off'}`}>{product.active ? 'Activo' : 'Oculto'}</span></td><td><div className="row-actions"><button onClick={() => openProduct(product)}><Pencil /></button><button onClick={() => void removeProduct(product)}><Trash2 /></button></div></td></tr>)}</tbody></table>{!filteredProducts.length && <Empty message="No hay productos que mostrar." />}</div>}
         {tab === 'clientes' && <div className="customer-grid">{filteredCustomers.map((customer) => <article key={customer.id}><div className="customer-card-top"><span>{customer.name.charAt(0)}</span><button onClick={() => openCustomer(customer)}><Pencil /></button></div><h3>{customer.name}</h3><p>{customer.phone}</p><small>{customer.email || 'Sin correo registrado'}</small><div><span>Saldo actual</span><strong className={customer.balanceCents ? 'has-debt' : ''}>{currency(customer.balanceCents)}</strong></div><footer><span>{customer.invoiceCount} factura(s)</span><b className={customer.balanceCents ? 'pending-dot' : 'paid-dot'}>{customer.balanceCents ? 'Pendiente' : 'Saldado'}</b></footer></article>)}{!filteredCustomers.length && <Empty message="No hay clientes que mostrar." />}</div>}
-        {tab === 'facturas' && <div className="data-card"><table><thead><tr><th>Factura</th><th>Cliente</th><th>Fecha</th><th>Total</th><th>Abonado</th><th>Saldo</th><th>Estado</th><th /></tr></thead><tbody>{filteredInvoices.map((invoice) => <tr key={invoice.id}><td><code>{invoice.number}</code></td><td><strong>{invoice.customerName}</strong><small className="table-subtext">{invoice.customerPhone}</small></td><td>{shortDate(invoice.createdAt)}</td><td><strong>{currency(invoice.totalCents)}</strong></td><td>{currency(invoice.paidCents)}</td><td><strong className={invoice.balanceCents ? 'has-debt' : ''}>{currency(invoice.balanceCents)}</strong></td><td><StatusBadge invoice={invoice} /></td><td><div className="row-actions"><button onClick={() => setSelectedInvoice(invoice)}><Eye /></button>{invoice.balanceCents > 0 && <button className="pay-action" onClick={() => { setPaymentInvoice(invoice); setPaymentAmount(invoice.balanceCents); setPaymentError('') }}><Banknote /></button>}</div></td></tr>)}</tbody></table>{!filteredInvoices.length && <Empty message="No hay facturas que mostrar." />}</div>}
+        {tab === 'facturas' && <div className="data-card"><table><thead><tr><th>Factura</th><th>Cliente</th><th>Fecha</th><th>Total</th><th>Abonado</th><th>Saldo</th><th>Estado</th><th /></tr></thead><tbody>{filteredInvoices.map((invoice) => <tr key={invoice.id}><td><code>{invoice.number}</code></td><td><strong>{invoice.customerName}</strong><small className="table-subtext">{invoice.customerPhone}</small></td><td>{shortDate(invoice.createdAt)}</td><td><strong>{currency(invoice.totalCents)}</strong></td><td>{currency(invoice.paidCents)}</td><td><strong className={invoice.balanceCents ? 'has-debt' : ''}>{currency(invoice.balanceCents)}</strong></td><td><StatusBadge invoice={invoice} /></td><td><div className="row-actions"><button onClick={() => setSelectedInvoice(invoice)}><Eye /></button><button onClick={() => printInvoice(invoice)}><Download /></button>{invoice.balanceCents > 0 && <button className="pay-action" onClick={() => { setPaymentInvoice(invoice); setPaymentAmount(invoice.balanceCents); setPaymentError('') }}><Banknote /></button>}<button className="danger-action" onClick={() => deleteInvoice(invoice)}><Trash2 /></button></div></td></tr>)}</tbody></table>{!filteredInvoices.length && <Empty message="No hay facturas que mostrar." />}</div>}
       </section>}
 
       {tab === 'contenido' && <section className="management-page content-page">
@@ -355,7 +410,7 @@ export function AdminPanel() {
     {customerModal && <AdminModal title={editingCustomer ? 'Editar cliente' : 'Registrar cliente'} subtitle="Guarda sus datos para facturar y consultar saldos." onClose={() => setCustomerModal(false)}><form onSubmit={saveCustomer} className="admin-form"><div className="form-grid"><label>Nombre completo<input required value={customerDraft.name} onChange={(event) => setCustomerDraft({ ...customerDraft, name: event.target.value })} /></label><label>Teléfono<input required value={customerDraft.phone} onChange={(event) => setCustomerDraft({ ...customerDraft, phone: event.target.value })} /></label><label>Correo<input type="email" value={customerDraft.email} onChange={(event) => setCustomerDraft({ ...customerDraft, email: event.target.value })} /></label><label>Dirección<input value={customerDraft.address} onChange={(event) => setCustomerDraft({ ...customerDraft, address: event.target.value })} /></label><label className="full-field">Notas<textarea value={customerDraft.notes} onChange={(event) => setCustomerDraft({ ...customerDraft, notes: event.target.value })} /></label></div><button className="primary-button full" disabled={saving}>{saving ? 'Guardando…' : 'Guardar cliente'}</button></form></AdminModal>}
     {invoiceModal && data && <AdminModal title="Nueva factura" subtitle="Selecciona el cliente, agrega productos y registra el pago inicial." onClose={() => setInvoiceModal(false)} wide><form onSubmit={createInvoice} className="admin-form"><label>Cliente<select required value={invoiceCustomerId} onChange={(event) => setInvoiceCustomerId(Number(event.target.value))}><option value="">Selecciona un cliente</option>{data.customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name} · {customer.phone}</option>)}</select></label><div className="invoice-builder"><div className="builder-title"><strong>Productos</strong><button type="button" onClick={() => setInvoiceLines([...invoiceLines, { productId: 0, quantity: 1 }])}><Plus /> Agregar línea</button></div>{invoiceLines.map((line, index) => <div className="invoice-line" key={index}><select required value={line.productId} onChange={(event) => setInvoiceLines(invoiceLines.map((item, itemIndex) => itemIndex === index ? { ...item, productId: Number(event.target.value) } : item))}><option value="">Selecciona un producto</option>{data.products.filter((product) => product.active && product.stock > 0).map((product) => <option value={product.id} key={product.id}>{product.code} · {product.name} ({product.stock})</option>)}</select><input type="number" min="1" value={line.quantity} onChange={(event) => setInvoiceLines(invoiceLines.map((item, itemIndex) => itemIndex === index ? { ...item, quantity: Number(event.target.value) } : item))} /><strong>{currency((data.products.find((product) => product.id === line.productId)?.priceCents || 0) * line.quantity)}</strong><button type="button" onClick={() => setInvoiceLines(invoiceLines.filter((_, itemIndex) => itemIndex !== index))}><Trash2 /></button></div>)}</div><div className="form-grid"><label>Pago inicial (RD$)<input type="number" min="0" max={invoiceDraftTotal / 100} value={invoicePaid / 100 || ''} onChange={(event) => setInvoicePaid(Math.round(Number(event.target.value) * 100))} /></label><label>Fecha límite<input type="date" value={invoiceDueDate} onChange={(event) => setInvoiceDueDate(event.target.value)} /></label></div><div className="invoice-draft-total"><span>Total de factura</span><strong>{currency(invoiceDraftTotal)}</strong></div><button className="primary-button full" disabled={saving || !invoiceDraftTotal}>{saving ? 'Creando factura…' : 'Crear factura'}</button></form></AdminModal>}
     {paymentInvoice && <AdminModal title="Registrar abono" subtitle={`${paymentInvoice.number} · ${paymentInvoice.customerName}`} onClose={() => setPaymentInvoice(null)}><form onSubmit={registerPayment} className="admin-form"><div className="balance-highlight"><span>Saldo pendiente</span><strong>{currency(paymentInvoice.balanceCents)}</strong></div><label>Monto recibido (RD$)<input required type="number" min="1" max={paymentInvoice.balanceCents / 100} value={paymentAmount / 100 || ''} onChange={(event) => setPaymentAmount(Math.round(Number(event.target.value) * 100))} /></label><label>Método de pago<select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value)}><option>Efectivo</option><option>Transferencia</option><option>Tarjeta</option><option>Otro</option></select></label>{paymentError && <p className="form-error">{paymentError}</p>}<button className="primary-button full" disabled={saving}>{saving ? 'Registrando…' : 'Confirmar abono'}</button></form></AdminModal>}
-    {selectedInvoice && <AdminModal title={selectedInvoice.number} subtitle={`${selectedInvoice.customerName} · ${shortDate(selectedInvoice.createdAt)}`} onClose={() => setSelectedInvoice(null)} wide><div className="invoice-detail"><div className="invoice-detail-summary"><div><span>Total</span><strong>{currency(selectedInvoice.totalCents)}</strong></div><div><span>Abonado</span><strong>{currency(selectedInvoice.paidCents)}</strong></div><div><span>Saldo</span><strong className={selectedInvoice.balanceCents ? 'has-debt' : ''}>{currency(selectedInvoice.balanceCents)}</strong></div><StatusBadge invoice={selectedInvoice} /></div><div className="detail-lines">{selectedInvoice.items.map((item) => <div key={item.id}><span><strong>{item.productName}</strong><small>{item.productCode} · {item.quantity} × {currency(item.unitPriceCents)}</small></span><b>{currency(item.totalCents)}</b></div>)}</div>{selectedInvoice.payments.length > 0 && <div className="payment-history"><h3>Historial de pagos</h3>{selectedInvoice.payments.map((payment) => <div key={payment.id}><span><strong>{payment.method}</strong><small>{shortDate(payment.createdAt)}</small></span><b>{currency(payment.amountCents)}</b></div>)}</div>}{selectedInvoice.balanceCents > 0 && <button className="primary-button full" onClick={() => { setPaymentInvoice(selectedInvoice); setPaymentAmount(selectedInvoice.balanceCents); setPaymentError(''); setSelectedInvoice(null) }}>Registrar abono</button>}</div></AdminModal>}
+    {selectedInvoice && <AdminModal title={selectedInvoice.number} subtitle={`${selectedInvoice.customerName} · ${shortDate(selectedInvoice.createdAt)}`} onClose={() => setSelectedInvoice(null)} wide><div className="invoice-detail"><div className="invoice-detail-summary"><div><span>Total</span><strong>{currency(selectedInvoice.totalCents)}</strong></div><div><span>Abonado</span><strong>{currency(selectedInvoice.paidCents)}</strong></div><div><span>Saldo</span><strong className={selectedInvoice.balanceCents ? 'has-debt' : ''}>{currency(selectedInvoice.balanceCents)}</strong></div><StatusBadge invoice={selectedInvoice} /></div><div className="detail-lines">{selectedInvoice.items.map((item) => <div key={item.id}><span><strong>{item.productName}</strong><small>{item.productCode} · {item.quantity} × {currency(item.unitPriceCents)}</small></span><b>{currency(item.totalCents)}</b></div>)}</div>{selectedInvoice.payments.length > 0 && <div className="payment-history"><h3>Historial de pagos</h3>{selectedInvoice.payments.map((payment) => <div key={payment.id}><span><strong>{payment.method}</strong><small>{shortDate(payment.createdAt)}</small></span><b>{currency(payment.amountCents)}</b></div>)}</div>}{selectedInvoice.balanceCents > 0 && <button className="primary-button full" onClick={() => { setPaymentInvoice(selectedInvoice); setPaymentAmount(selectedInvoice.balanceCents); setPaymentError(''); setSelectedInvoice(null) }}>Registrar abono</button>}<div className="detail-actions"><button className="secondary-button full" onClick={() => printInvoice(selectedInvoice)}><Download /> Descargar / imprimir</button><button className="danger-button full" onClick={() => deleteInvoice(selectedInvoice)}><Trash2 /> Eliminar factura</button></div></div></AdminModal>}
   </main>
 }
 
