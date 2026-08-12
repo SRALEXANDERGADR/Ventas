@@ -291,127 +291,102 @@ export function AdminPanel() {
     ].filter(Boolean).join('\n')
   }
 
-  const buildInvoicePdf = (invoice: Invoice) => {
-    const doc = new jsPDF({ unit: 'pt', format: 'letter' })
-    const marginX = 48
-    const rightX = 564
-    let y = 56
-
-    doc.setFont('times', 'bold')
-    doc.setFontSize(10)
-    doc.setTextColor(91, 107, 78)
-    doc.text('GESTIÓN AURA', marginX, y)
-    y += 26
-
-    doc.setTextColor(44, 44, 34)
-    doc.setFontSize(20)
-    doc.text(`Factura ${invoice.number}`, marginX, y)
-    y += 18
-
-    doc.setFont('times', 'normal')
-    doc.setFontSize(10)
-    doc.setTextColor(120, 120, 106)
-    doc.text(`Fecha: ${shortDate(invoice.createdAt)}${invoice.dueDate ? ' · Vence: ' + shortDate(invoice.dueDate) : ''}`, marginX, y)
-    y += 24
-
-    doc.setFont('times', 'bold')
-    doc.setFontSize(11)
-    doc.setTextColor(44, 44, 34)
-    doc.text(invoice.customerName, marginX, y)
-    y += 14
-    doc.setFont('times', 'normal')
-    doc.setFontSize(10)
-    doc.setTextColor(120, 120, 106)
-    doc.text(invoice.customerPhone || '', marginX, y)
-    y += 26
-
-    const col = { code: marginX, name: marginX + 60, qty: 350, price: 410, total: 480 }
-    doc.setFont('times', 'bold')
-    doc.setFontSize(9)
-    doc.setTextColor(120, 120, 106)
-    doc.text('CÓDIGO', col.code, y)
-    doc.text('PRODUCTO', col.name, y)
-    doc.text('CANT.', col.qty, y)
-    doc.text('PRECIO', col.price, y)
-    doc.text('TOTAL', col.total, y)
-    y += 6
-    doc.setDrawColor(228, 224, 211)
-    doc.line(marginX, y, rightX, y)
-    y += 16
-
-    doc.setFont('times', 'normal')
-    doc.setFontSize(10)
-    doc.setTextColor(44, 44, 34)
-    invoice.items.forEach((item) => {
-      if (y > 730) { doc.addPage(); y = 56 }
-      doc.text(item.productCode, col.code, y)
-      doc.text(item.productName.length > 32 ? `${item.productName.slice(0, 32)}…` : item.productName, col.name, y)
-      doc.text(String(item.quantity), col.qty, y)
-      doc.text(currency(item.unitPriceCents), col.price, y)
-      doc.text(currency(item.totalCents), col.total, y)
-      y += 18
-    })
-
-    y += 6
-    doc.setDrawColor(44, 44, 34)
-    doc.line(350, y, rightX, y)
-    y += 16
-
-    const totalsLines: Array<[string, string, boolean]> = [
+  const buildInvoiceHtml = (invoice: Invoice) => {
+    const cell = 'padding:9px 6px;border-bottom:1px solid #e4e0d3;font-size:13px'
+    const rows = invoice.items.map((item) => `<tr>
+        <td style="${cell}">${item.productCode}</td>
+        <td style="${cell}">${item.productName}</td>
+        <td style="${cell};text-align:center">${item.quantity}</td>
+        <td style="${cell};text-align:right">${currency(item.unitPriceCents)}</td>
+        <td style="${cell};text-align:right">${currency(item.totalCents)}</td>
+      </tr>`).join('')
+    const paymentRows = invoice.payments.map((payment) => `<tr>
+        <td style="${cell}">${shortDate(payment.createdAt)}</td>
+        <td style="${cell}">${payment.method}</td>
+        <td style="${cell};text-align:right">${currency(payment.amountCents)}</td>
+      </tr>`).join('')
+    const totalsRows: Array<[string, string, boolean]> = [
       ['Subtotal', currency(invoice.subtotalCents), false],
       ...(invoice.discountCents ? [['Descuento', `-${currency(invoice.discountCents)}`, false] as [string, string, boolean]] : []),
       ['Total', currency(invoice.totalCents), true],
       ['Abonado', currency(invoice.paidCents), false],
-      ['Saldo pendiente', currency(invoice.balanceCents), true],
+      ['Saldo', currency(invoice.balanceCents), false],
     ]
-    totalsLines.forEach(([label, value, bold]) => {
-      if (y > 730) { doc.addPage(); y = 56 }
-      doc.setFont('times', bold ? 'bold' : 'normal')
-      doc.setFontSize(bold ? 12 : 10)
-      doc.setTextColor(44, 44, 34)
-      doc.text(label, 350, y)
-      doc.text(value, rightX, y, { align: 'right' })
-      y += bold ? 20 : 16
-    })
+    const totalsHtml = totalsRows.map(([label, value, bold]) => `<tr>
+        <td style="padding:${bold ? '12px 6px 4px' : '4px 6px'};border-top:${bold ? '2px solid #2c2c22' : 'none'};font-weight:${bold ? 'bold' : 'normal'};font-size:${bold ? '17px' : '13px'}">${label}</td>
+        <td style="padding:${bold ? '12px 6px 4px' : '4px 6px'};border-top:${bold ? '2px solid #2c2c22' : 'none'};font-weight:${bold ? 'bold' : 'normal'};font-size:${bold ? '17px' : '13px'};text-align:right">${value}</td>
+      </tr>`).join('')
+    const th = 'text-align:left;text-transform:uppercase;font-size:11px;letter-spacing:.05em;color:#78786a;padding:8px 6px;border-bottom:1px solid #e4e0d3'
 
-    if (invoice.payments.length) {
-      y += 12
-      if (y > 730) { doc.addPage(); y = 56 }
-      doc.setFont('times', 'bold')
-      doc.setFontSize(9)
-      doc.setTextColor(120, 120, 106)
-      doc.text('HISTORIAL DE PAGOS', marginX, y)
-      y += 16
-      doc.setFont('times', 'normal')
-      doc.setFontSize(10)
-      doc.setTextColor(44, 44, 34)
-      invoice.payments.forEach((payment) => {
-        if (y > 730) { doc.addPage(); y = 56 }
-        doc.text(`${shortDate(payment.createdAt)} · ${payment.method}`, marginX, y)
-        doc.text(currency(payment.amountCents), rightX, y, { align: 'right' })
-        y += 16
-      })
-    }
-
-    if (invoice.notes) {
-      y += 12
-      if (y > 730) { doc.addPage(); y = 56 }
-      doc.setFont('times', 'normal')
-      doc.setFontSize(9)
-      doc.setTextColor(120, 120, 106)
-      doc.text(`Notas: ${invoice.notes}`, marginX, y)
-    }
-
-    return doc
+    return `<div style="font-family:Georgia,'Times New Roman',serif;color:#2c2c22;width:720px;padding:44px;background:#faf7ef;box-sizing:border-box">
+      <div style="letter-spacing:.12em;text-transform:uppercase;font-size:12px;color:#5b6b4e;font-weight:bold">Gestión Aura</div>
+      <div style="font-size:30px;font-weight:bold;margin:18px 0 8px">Factura ${invoice.number}</div>
+      <div style="color:#78786a;font-size:13px;margin:0 0 18px">Fecha: ${shortDate(invoice.createdAt)}${invoice.dueDate ? ' · Vence: ' + shortDate(invoice.dueDate) : ''}</div>
+      <div style="font-size:14px;margin:0 0 4px"><b>Cliente:</b> ${invoice.customerName}</div>
+      <div style="color:#78786a;font-size:13px;margin:0 0 24px">${invoice.customerPhone || ''}</div>
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr>
+          <th style="${th}">Código</th>
+          <th style="${th}">Producto</th>
+          <th style="${th};text-align:center">Cant.</th>
+          <th style="${th};text-align:right">Precio</th>
+          <th style="${th};text-align:right">Total</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <table style="width:100%;border-collapse:collapse;margin-top:6px">${totalsHtml}</table>
+      ${invoice.payments.length ? `<div style="margin-top:30px;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:#78786a;font-weight:bold">Historial de pagos</div>
+      <table style="width:100%;border-collapse:collapse;margin-top:10px">
+        <thead><tr>
+          <th style="${th}">Fecha</th>
+          <th style="${th}">Método</th>
+          <th style="${th};text-align:right">Monto</th>
+        </tr></thead>
+        <tbody>${paymentRows}</tbody>
+      </table>` : ''}
+      ${invoice.notes ? `<div style="margin-top:22px;color:#78786a;font-size:12px">Notas: ${invoice.notes}</div>` : ''}
+    </div>`
   }
 
-  const downloadInvoice = (invoice: Invoice) => {
-    buildInvoicePdf(invoice).save(`${invoice.number}.pdf`)
+  const buildInvoicePdf = (invoice: Invoice): Promise<jsPDF> => {
+    return new Promise((resolve, reject) => {
+      const container = document.createElement('div')
+      container.style.position = 'fixed'
+      container.style.top = '0'
+      container.style.left = '-10000px'
+      container.innerHTML = buildInvoiceHtml(invoice)
+      document.body.appendChild(container)
+      const doc = new jsPDF('p', 'pt', 'letter')
+      doc.html(container, {
+        x: 0,
+        y: 0,
+        width: 612,
+        windowWidth: 720,
+        autoPaging: 'text',
+        callback: (pdf) => {
+          document.body.removeChild(container)
+          resolve(pdf)
+        },
+      }).catch((caught: unknown) => {
+        document.body.removeChild(container)
+        reject(caught instanceof Error ? caught : new Error('No pudimos generar el PDF.'))
+      })
+    })
+  }
+
+  const downloadInvoice = async (invoice: Invoice) => {
+    try {
+      const doc = await buildInvoicePdf(invoice)
+      doc.save(`${invoice.number}.pdf`)
+    } catch (caught) {
+      setNotice(caught instanceof Error ? caught.message : 'No pudimos generar el PDF.')
+    }
   }
 
   const shareInvoice = async (invoice: Invoice) => {
     try {
-      const blob = buildInvoicePdf(invoice).output('blob')
+      const doc = await buildInvoicePdf(invoice)
+      const blob = doc.output('blob')
       const file = new File([blob], `${invoice.number}.pdf`, { type: 'application/pdf' })
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file], title: `Factura ${invoice.number}` })
