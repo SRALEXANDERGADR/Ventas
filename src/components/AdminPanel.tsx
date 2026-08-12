@@ -353,7 +353,10 @@ export function AdminPanel() {
       const container = document.createElement('div')
       container.style.position = 'fixed'
       container.style.top = '0'
-      container.style.left = '-10000px'
+      container.style.left = '0'
+      container.style.zIndex = '-9999'
+      container.style.opacity = '0.01'
+      container.style.pointerEvents = 'none'
       container.innerHTML = buildInvoiceHtml(invoice)
       document.body.appendChild(container)
       const doc = new jsPDF('p', 'pt', 'letter')
