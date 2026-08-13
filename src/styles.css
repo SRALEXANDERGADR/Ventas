@@ -122,6 +122,10 @@ footer > p { color: rgba(255,255,255,.5); text-align: center; font: italic 1rem 
 footer > div:last-child { display: flex; flex-direction: column; align-items: flex-end; }
 footer > div:last-child span, footer > div:last-child small { color: rgba(255,255,255,.5); font-size: .66rem; }
 footer > div:last-child strong { margin: 6px 0; font-family: Georgia, serif; }
+.footer-credit { grid-column: 1 / -1; justify-self: center; margin-top: 10px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,.12); color: rgba(255,255,255,.55); font-size: .78rem; text-decoration: underline; text-underline-offset: 3px; transition: color .2s; }
+.footer-credit strong { color: rgba(255,255,255,.85); font-family: Georgia, serif; }
+.footer-credit:hover, .footer-credit:active { color: #aebca4; }
+.footer-credit:hover strong, .footer-credit:active strong { color: #aebca4; }
 
 .drawer-layer, .modal-layer { position: fixed; inset: 0; z-index: 100; display: flex; justify-content: flex-end; }
 .drawer-backdrop, .modal-backdrop { position: absolute; inset: 0; border: 0; background: rgba(24,27,21,.55); backdrop-filter: blur(4px); cursor: pointer; }
