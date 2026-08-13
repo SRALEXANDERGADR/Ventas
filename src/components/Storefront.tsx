@@ -137,7 +137,7 @@ export function Storefront() {
           <div className="hero-notes"><span><Check size={15} /> {text('hero_note_1')}</span><span><Check size={15} /> {text('hero_note_2')}</span></div>
         </div>
         <div className="hero-visual reveal delay-1">
-          <div className="hero-image" />
+          <div className="hero-image" style={{ backgroundImage: `url("${text('hero_image_url')}")` }} />
           <div className="floating-card"><span>{text('hero_favorite_label')}</span><strong>{text('hero_favorite_product')}</strong><small>{text('hero_favorite_description')}</small></div>
           <div className="orbit-label">{text('hero_orbit_text')}</div>
         </div>
