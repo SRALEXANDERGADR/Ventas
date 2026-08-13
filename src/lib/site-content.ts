@@ -35,6 +35,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
   hero_favorite_product: 'Champú Botánico',
   hero_favorite_description: 'Romero + sábila',
   hero_orbit_text: 'Cuidado que se siente',
+  hero_image_url: 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&w=1200&q=90',
 
   // Beneficios (franja de tres bloques)
   benefit_1_title: 'Productos seleccionados',
@@ -101,7 +102,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
   order_generic_error: 'No pudimos registrar el pedido.',
 }
 
-type ContentFieldType = 'input' | 'textarea'
+type ContentFieldType = 'input' | 'textarea' | 'image'
 
 export type ContentFieldDefinition = {
   key: keyof typeof DEFAULT_SITE_CONTENT
@@ -150,6 +151,7 @@ export const CONTENT_FIELD_GROUPS: ContentFieldGroup[] = [
       { key: 'hero_favorite_product', label: 'Nombre de producto favorito', type: 'input' },
       { key: 'hero_favorite_description', label: 'Descripción del producto favorito', type: 'input' },
       { key: 'hero_orbit_text', label: 'Texto flotante', type: 'input' },
+      { key: 'hero_image_url', label: 'Imagen principal', type: 'image' },
     ],
   },
   {
