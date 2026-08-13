@@ -6,7 +6,7 @@
 // secreto `SESSION_SECRET`). Cada request administrativo valida esa firma;
 // no se guarda ningún estado de sesión en la base de datos.
 
-const COOKIE_NAME = 'aura_session'
+const COOKIE_NAME = 'cristy_beauty'
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7 // 7 días
 
 function toBase64Url(bytes: Uint8Array): string {
