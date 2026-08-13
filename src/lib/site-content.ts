@@ -14,8 +14,8 @@ export type SiteContent = Record<string, string>
 
 export const DEFAULT_SITE_CONTENT: SiteContent = {
   // Identidad del sitio
-  site_name: 'Aura',
-  site_tagline: 'esenciales',
+  site_name: 'Cristy',
+  site_tagline: 'Beauty',
 
   // Encabezado / navegación
   nav_catalog: 'Colección',
@@ -93,7 +93,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
   checkout_submit_button: 'Confirmar pedido',
   checkout_submitting_button: 'Registrando pedido…',
   checkout_success_label: 'Pedido recibido',
-  checkout_success_title: '¡Gracias por elegir Aura!',
+  checkout_success_title: '¡Gracias por elegir a Cristy Beauty!',
   checkout_success_message: 'Tu factura {number} quedó registrada. Nos comunicaremos contigo para coordinar entrega y pago.',
   checkout_success_button: 'Volver a la tienda',
 
