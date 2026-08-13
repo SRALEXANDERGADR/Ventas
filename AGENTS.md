@@ -2,7 +2,7 @@
 
 ## Descripción
 
-Aura Esenciales es una tienda de cuidado personal con catálogo público,
+Cristy Beauty es una tienda de cuidado personal con catálogo público,
 carrito, registro de pedidos y un panel administrativo protegido. El panel
 gestiona inventario, clientes, facturas, saldos y abonos.
 
