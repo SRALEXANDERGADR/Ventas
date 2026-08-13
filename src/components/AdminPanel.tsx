@@ -488,12 +488,14 @@ export function AdminPanel() {
                 <div className="panel-title"><div><small>Contenido del sitio</small><h2>{group.title}</h2></div></div>
                 <div className="form-grid">
                   {group.fields.map((field) => (
-                    <label className={field.type === 'textarea' ? 'full-field' : ''} key={field.key}>
-                      {field.label}
-                      {field.type === 'textarea'
-                        ? <textarea disabled={contentLoading} value={contentDraft[field.key] ?? ''} onChange={(event) => setContentDraft({ ...contentDraft, [field.key]: event.target.value })} />
-                        : <input disabled={contentLoading} value={contentDraft[field.key] ?? ''} onChange={(event) => setContentDraft({ ...contentDraft, [field.key]: event.target.value })} />}
-                    </label>
+                    field.type === 'image'
+                      ? <ContentImageField key={field.key} label={field.label} value={contentDraft[field.key] ?? ''} onChange={(value) => setContentDraft({ ...contentDraft, [field.key]: value })} />
+                      : <label className={field.type === 'textarea' ? 'full-field' : ''} key={field.key}>
+                          {field.label}
+                          {field.type === 'textarea'
+                            ? <textarea disabled={contentLoading} value={contentDraft[field.key] ?? ''} onChange={(event) => setContentDraft({ ...contentDraft, [field.key]: event.target.value })} />
+                            : <input disabled={contentLoading} value={contentDraft[field.key] ?? ''} onChange={(event) => setContentDraft({ ...contentDraft, [field.key]: event.target.value })} />}
+                        </label>
                   ))}
                 </div>
               </div>
@@ -534,6 +536,44 @@ function ImageField({ value, mode, uploading, onModeChange, onUrlChange, onFileS
           {uploading && <span className="image-upload-status">Subiendo…</span>}
         </div>}
     {value && <img className="image-field-preview" src={value} alt="Vista previa del producto" />}
+  </label>
+}
+
+function ContentImageField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  const [mode, setMode] = useState<'url' | 'file'>('url')
+  const [uploading, setUploading] = useState(false)
+
+  const handleFile = async (file: File) => {
+    setUploading(true)
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = () => reject(new Error('No se pudo leer el archivo.'))
+        reader.readAsDataURL(file)
+      })
+      const result = await api<{ url: string }>('/api/upload', { method: 'POST', body: JSON.stringify({ filename: file.name, dataUrl }) })
+      onChange(result.url)
+    } catch {
+      // El error se ignora aquí; el usuario puede intentar de nuevo.
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return <label className="full-field image-field">
+    {label}
+    <div className="image-mode-toggle">
+      <button type="button" className={mode === 'url' ? 'active' : ''} onClick={() => setMode('url')}>Usar URL</button>
+      <button type="button" className={mode === 'file' ? 'active' : ''} onClick={() => setMode('file')}>Subir desde el dispositivo</button>
+    </div>
+    {mode === 'url'
+      ? <input value={value} onChange={(event) => onChange(event.target.value)} placeholder="https://…" />
+      : <div className="image-upload-row">
+          <input type="file" accept="image/*" disabled={uploading} onChange={(event) => { const file = event.target.files?.[0]; if (file) void handleFile(file); event.target.value = '' }} />
+          {uploading && <span className="image-upload-status">Subiendo…</span>}
+        </div>}
+    {value && <img className="image-field-preview" src={value} alt="Vista previa" />}
   </label>
 }
 
