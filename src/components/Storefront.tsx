@@ -187,6 +187,7 @@ export function Storefront() {
         <div className="brand footer-brand"><span className="brand-mark"><Sparkles size={19} /></span><span><strong>{text('site_name')}</strong><small>{text('site_tagline')}</small></span></div>
         <p>{text('footer_tagline')}</p>
         <div><span>{text('footer_contact_label')}</span><strong>{text('footer_phone')}</strong><small>{text('footer_hours')}</small></div>
+        <a className="footer-credit" href="https://gadrnet.com" target="_blank" rel="noopener noreferrer">Creado por: <strong>GADR Net</strong></a>
       </footer>
 
       {cartOpen && <div className="drawer-layer" role="dialog" aria-modal="true">
