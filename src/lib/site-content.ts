@@ -13,6 +13,9 @@
 export type SiteContent = Record<string, string>
 
 export const DEFAULT_SITE_CONTENT: SiteContent = {
+  // Notificaciones
+  notification_email: '',
+
   // Identidad del sitio
   site_name: 'Cristy',
   site_tagline: 'Beauty',
@@ -118,6 +121,12 @@ export type ContentFieldGroup = {
 }
 
 export const CONTENT_FIELD_GROUPS: ContentFieldGroup[] = [
+  {
+    id: 'notifications',
+    title: 'Notificaciones',
+    description: 'Correo donde recibirás el aviso y la factura cada vez que un cliente registre un pedido.',
+    fields: [{ key: 'notification_email', label: 'Correo para recibir pedidos', type: 'input' }],
+  },
   {
     id: 'identity',
     title: 'Identidad del sitio',

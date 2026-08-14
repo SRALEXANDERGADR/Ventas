@@ -14,6 +14,10 @@ interface Env {
   GITHUB_BRANCH?: string
   // Carpeta del repo donde se guardan las imágenes (por defecto "public/products")
   GITHUB_UPLOAD_PATH?: string
+  // Envío de correo de aviso de pedidos con Resend (https://resend.com). Ver README.md.
+  RESEND_API_KEY?: string
+  // Remitente del correo, ej. "Cristy Beauty <pedidos@tudominio.com>" (opcional)
+  RESEND_FROM_EMAIL?: string
 }
 
 declare module 'cloudflare:workers' {

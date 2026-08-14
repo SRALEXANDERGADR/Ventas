@@ -11,3 +11,9 @@ GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 GITHUB_REPO=tu-usuario/tu-repositorio
 GITHUB_BRANCH=main
 GITHUB_UPLOAD_PATH=public/products
+
+# Necesario para que llegue el correo de aviso cuando un cliente registra un pedido.
+# Crea una cuenta gratuita en https://resend.com, genera una API key y pégala aquí.
+RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# Opcional: remitente del correo. Si usas el dominio de prueba de Resend, deja el valor por defecto.
+RESEND_FROM_EMAIL=Cristy Beauty <onboarding@resend.dev>

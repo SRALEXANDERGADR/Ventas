@@ -4,6 +4,7 @@ import { and, asc, desc, eq, inArray, or } from 'drizzle-orm'
 import { db } from '../../../db/index.js'
 import { customers, invoiceItems, invoices, payments, products, siteContent } from '../../../db/schema.js'
 import { isAuthenticated } from '@/lib/auth'
+import { sendOrderNotificationEmail } from '@/lib/email'
 import { uploadProductImage } from '@/lib/github'
 import { DEFAULT_SITE_CONTENT, mergeSiteContent } from '@/lib/site-content'
 
@@ -108,6 +109,20 @@ async function createInvoice(body: Record<string, unknown>, publicOrder = false)
   await db.insert(invoiceItems).values(detailedItems.map(({ product, quantity, totalCents: lineTotal }) => ({ invoiceId: invoice.id, productId: product.id, productCode: product.code, productName: product.name, quantity, unitPriceCents: product.priceCents, totalCents: lineTotal })))
   if (paidCents > 0) await db.insert(payments).values({ invoiceId: invoice.id, amountCents: paidCents, method: String(body.method || 'Efectivo'), note: 'Pago inicial' })
   await Promise.all(detailedItems.map(({ product, quantity }) => db.update(products).set({ stock: product.stock - quantity, updatedAt: new Date() }).where(eq(products.id, product.id))))
+
+  if (publicOrder) {
+    const [customerRow] = await db.select().from(customers).where(eq(customers.id, customerId)).limit(1)
+    const content = await getSiteContent()
+    if (customerRow && content.notification_email) {
+      await sendOrderNotificationEmail(env, {
+        to: content.notification_email,
+        customer: { name: customerRow.name, phone: customerRow.phone, email: customerRow.email, address: customerRow.address },
+        invoice: { number: invoice.number, createdAt: invoice.createdAt, subtotalCents: invoice.subtotalCents, discountCents: invoice.discountCents, totalCents: invoice.totalCents, paidCents: invoice.paidCents, notes: invoice.notes },
+        items: detailedItems.map(({ product, quantity, totalCents: lineTotal }) => ({ productCode: product.code, productName: product.name, quantity, unitPriceCents: product.priceCents, totalCents: lineTotal })),
+      })
+    }
+  }
+
   return json({ invoice: { ...invoice, customerId }, message: publicOrder ? 'Pedido registrado correctamente.' : 'Factura creada correctamente.' }, 201)
 }
 
