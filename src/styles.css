@@ -126,6 +126,19 @@ footer > p { color: rgba(255,255,255,.5); text-align: center; font: italic 1.05r
 .footer-credit strong { color: rgba(255,255,255,.85); font-family: Georgia, serif; }
 .footer-credit:hover, .footer-credit:active { color: #aebca4; }
 .footer-credit:hover strong, .footer-credit:active strong { color: #aebca4; }
+.footer-legal { grid-column: 1 / -1; justify-self: center; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 14px; margin-top: 4px; color: rgba(255,255,255,.4); font-size: .74rem; }
+.footer-legal a { color: rgba(255,255,255,.6); text-decoration: underline; text-underline-offset: 3px; }
+.footer-legal a:hover, .footer-legal a:active { color: #aebca4; }
+
+.policies-page { min-height: 100vh; background: var(--cream, #f7f5ef); }
+.policies-header { display: flex; align-items: center; justify-content: space-between; padding: 22px max(5vw, calc((100vw - 1260px)/2)); }
+.policies-back { display: flex; align-items: center; gap: 6px; color: inherit; text-decoration: none; font-size: .9rem; }
+.policies-content { max-width: 720px; margin: 0 auto; padding: 20px max(5vw, 0px) 100px; }
+.policies-content h1 { font-family: Georgia, serif; font-size: 2.4rem; margin-bottom: 4px; }
+.policies-updated { color: rgba(0,0,0,.45); font-size: .85rem; margin-bottom: 40px; }
+.policies-content section { margin-bottom: 32px; }
+.policies-content h2 { font-family: Georgia, serif; font-size: 1.3rem; margin-bottom: 10px; }
+.policies-content p { line-height: 1.7; color: rgba(0,0,0,.72); }
 
 .drawer-layer, .modal-layer { position: fixed; inset: 0; z-index: 100; display: flex; justify-content: flex-end; }
 .drawer-backdrop, .modal-backdrop { position: absolute; inset: 0; border: 0; background: rgba(24,27,21,.55); backdrop-filter: blur(4px); cursor: pointer; }
