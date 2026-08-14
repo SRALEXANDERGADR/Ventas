@@ -188,6 +188,10 @@ export function Storefront() {
         <p>{text('footer_tagline')}</p>
         <div className="footer-contact"><span>{text('footer_contact_label')}</span><strong>{text('footer_phone')}</strong><small>{text('footer_hours')}</small></div>
         <a className="footer-credit" href="https://gadrnet.com" target="_blank" rel="noopener noreferrer">Creado por: <strong>GADR Net</strong></a>
+        <div className="footer-legal">
+          <span>© 2026 Cristy Beauty. Todos los derechos reservados.</span>
+          <Link to="/politicas">Políticas</Link>
+        </div>
       </footer>
 
       {cartOpen && <div className="drawer-layer" role="dialog" aria-modal="true">
