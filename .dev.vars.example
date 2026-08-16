@@ -16,4 +16,4 @@ GITHUB_UPLOAD_PATH=public/products
 # Crea una cuenta gratuita en https://resend.com, genera una API key y pégala aquí.
 RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # Opcional: remitente del correo. Si usas el dominio de prueba de Resend, deja el valor por defecto.
-RESEND_FROM_EMAIL=Cristy Beauty <onboarding@resend.dev>
+RESEND_FROM_EMAIL=Aura Beauty <onboarding@resend.dev>

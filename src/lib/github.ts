@@ -31,7 +31,7 @@ export async function uploadProductImage(
     method: 'PUT',
     headers: {
       Authorization: `Bearer ${env.GITHUB_TOKEN}`,
-      'User-Agent': 'cristy-beauty-app',
+      'User-Agent': 'aura-beauty-app',
       Accept: 'application/vnd.github+json',
       'Content-Type': 'application/json',
     },

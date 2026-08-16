@@ -198,7 +198,7 @@ export async function sendOrderNotificationEmail(
   }
 
   try {
-    const from = env.RESEND_FROM_EMAIL || 'Cristy Beauty <onboarding@resend.dev>'
+    const from = env.RESEND_FROM_EMAIL || 'Aura Beauty <onboarding@resend.dev>'
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {

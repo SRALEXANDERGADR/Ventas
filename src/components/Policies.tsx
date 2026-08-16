@@ -7,7 +7,7 @@ export function Policies() {
       <header className="policies-header">
         <Link to="/" className="brand">
           <span className="brand-mark"><Sparkles size={19} /></span>
-          <span><strong>Cristy</strong><small>BEAUTY</small></span>
+          <span><strong>Aura</strong><small>BEAUTY</small></span>
         </Link>
         <Link to="/" className="policies-back"><ArrowLeft size={16} /> Volver a la tienda</Link>
       </header>
@@ -19,7 +19,7 @@ export function Policies() {
         <section>
           <h2>Política de privacidad</h2>
           <p>
-            En Cristy Beauty solo pedimos los datos necesarios para procesar tu pedido:
+            En Aura Beauty solo pedimos los datos necesarios para procesar tu pedido:
             nombre, teléfono, correo y dirección de entrega. Esta información se usa
             únicamente para contactarte sobre tu compra y coordinar la entrega, y no se
             comparte con terceros ni se usa con fines distintos a los de tu pedido.

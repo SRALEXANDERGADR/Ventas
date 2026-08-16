@@ -16,7 +16,7 @@ interface Env {
   GITHUB_UPLOAD_PATH?: string
   // Envío de correo de aviso de pedidos con Resend (https://resend.com). Ver README.md.
   RESEND_API_KEY?: string
-  // Remitente del correo, ej. "Cristy Beauty <pedidos@tudominio.com>" (opcional)
+  // Remitente del correo, ej. "Aura Beauty <pedidos@tudominio.com>" (opcional)
   RESEND_FROM_EMAIL?: string
 }
 
